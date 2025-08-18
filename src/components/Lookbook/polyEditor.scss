@@ -1,0 +1,38 @@
+.polyEditor { border: 1px solid #e6e6e6; border-radius: 12px; background: #fff; }
+.polyEditor__bar {
+  display: flex; flex-wrap: wrap; gap: 8px; padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+.polyEditor__bar button {
+  padding: 6px 10px; border: 1px solid #ddd; border-radius: 8px; background: #f6f6f6; cursor: pointer;
+}
+.polyEditor__bar button:disabled { opacity: .5; cursor: not-allowed; }
+.polyEditor__import { display: flex; gap: 6px; margin-left: auto; }
+.polyEditor__import input {
+  min-width: 260px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 8px;
+}
+
+.polyEditor__stage { position: relative; width: 100%; }
+.polyEditor__stage img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.polyEditor__overlay {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+}
+
+.pe__path {
+  fill: rgba(14,165,233,.12);
+  stroke: rgba(14,165,233,.8);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.pe__path.is-closed { fill: rgba(14,165,233,.18); }
+
+.pe__rubber {
+  stroke: rgba(14,165,233,.7);
+  stroke-dasharray: 4 4;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.pe__pin { fill: #0ea5e9; stroke: #fff; stroke-width: 2; }
+.pe__pinHit { fill: transparent; cursor: grab; }
+.pe__idx { font: 12px/1 monospace; fill: #222; paint-order: stroke; stroke: #fff; stroke-width: 3px; }

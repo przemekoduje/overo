@@ -1,0 +1,113 @@
+/* reset minimalistyczny */
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body { margin: 0; font-family: system-ui, Arial, sans-serif; color: #222; background: #f3f3f3; }
+
+/* strona ze scroll-snap (działa świetnie na mobile) */
+.page {
+  scroll-snap-type: y mandatory;
+  overflow-y: auto;
+  height: 100dvh; /* szanuje notch i paski iOS */
+}
+
+/* wspólny styl sekcji */
+.sec {
+  position: relative;
+  width: 100%;
+  padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+
+  /* każda sekcja przykleja się w oknie */
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  background: #fff;
+}
+
+/* 1,2,5 = pełne okno */
+.sec--vh {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+
+/* prosta pełnoekranowa grafika (S2, S5) */
+.fullimg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* S1 hero z overlay napisem */
+.hero { overflow: hidden; }
+.hero__img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.hero__over {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(28px, 8vw, 56px);
+  color: white;
+  text-shadow: 0 2px 18px rgba(0,0,0,.45);
+}
+
+/* S3 – detale + lookbook */
+.details { background: #eee; }
+.details__grid {
+  display: grid;
+  gap: 12px;
+  /* mobile: kolumna z detalami nad polem lookbook */
+  grid-template-columns: 1fr;
+}
+.details__media {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.details__media img {
+  width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px;
+}
+.details__lookbook {
+  min-height: 42vh; /* „pole” – możemy zmienić na stałe 40–60vh */
+  background: #fff;
+  border-radius: 12px;
+  display: grid; place-items: center;
+  border: 1px solid #ddd;
+}
+.placeholder { opacity: .5; font-size: 14px; }
+
+/* S4 – media ~75vh + tekst auto */
+.feature {
+  padding: 0; /* indywidualne odstępy niżej */
+  background: #fff;
+}
+.feature__media {
+  height: 75vh; /* wymóg: ~75% wysokości okna */
+  max-height: 75dvh; 
+}
+.feature__media img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.feature__text {
+  padding: 16px;
+  line-height: 1.45;
+  background: #fff;
+}
+
+/* S6 – stopka auto-height */
+.footer {
+  background: #111; color: #eee;
+  padding: 24px 16px;
+}
+.footer__inner {
+  max-width: 960px; margin: 0 auto;
+}
+
+/* breakpoint: w poziomie/tablet można ułożyć S3 w 2 kolumny */
+@media (min-width: 720px) {
+  .details__grid {
+    grid-template-columns: 1fr 1fr; /* lewo: detale, prawo: pole lookbook */
+    align-items: start;
+  }
+  .details__lookbook { min-height: 60vh; }
+}

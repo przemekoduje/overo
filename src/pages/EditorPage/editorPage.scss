@@ -1,0 +1,39 @@
+.editorPage {
+  padding: 16px;
+  font-family: system-ui, Arial;
+}
+header .row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+header input {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+.btn {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #f6f6f6;
+  cursor: pointer;
+}
+.stage {
+  margin-top: 12px;
+}
+.list {
+  margin-top: 16px;
+}
+.itemRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 0.6fr 2fr auto;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.itemRow input {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
