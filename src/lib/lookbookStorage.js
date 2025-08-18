@@ -1,62 +1,117 @@
 const KEY = "overo_lookbook_v1";
 
-/** pobierz cały obiekt z localStorage */
+/* --- Core helpers --- */
 function getAll() {
   try {
-    return JSON.parse(localStorage.getItem(KEY)) || { images: {} };
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return { collections: {}, images: {} };
+    const data = JSON.parse(raw);
+
+    // MIGRACJA: jeśli stary format (np. tylko images), dokończ strukturę
+    return {
+      collections: data.collections || {},
+      images: data.images || {},
+    };
   } catch {
-    return { images: {} };
+    return { collections: {}, images: {} };
   }
 }
 
-/** zapisz cały obiekt */
-function setAll(data) {
-  localStorage.setItem(KEY, JSON.stringify(data));
+function setAll(db) {
+  const safe = {
+    collections: db?.collections || {},
+    images: db?.images || {},
+  };
+  localStorage.setItem(KEY, JSON.stringify(safe));
 }
 
-/** lista imageId z metadanymi */
-export function listImages() {
+/* --- Collections API --- */
+export function listCollections() {
   const db = getAll();
-  return Object.entries(db.images).map(([imageId, rec]) => ({ imageId, ...rec.meta }));
+  const col = db.collections || {};
+  return Object.entries(col).map(([collectionId, c]) => ({ collectionId, ...c }));
 }
 
-/** pobierz items (poligony) dla obrazka */
+export function getCollection(collectionId) {
+  const db = getAll();
+  const col = db.collections || {};
+  return col[collectionId] || { title: "", cover: "", looks: [] };
+}
+
+export function upsertCollection(collectionId, data) {
+  const db = getAll();
+  const col = db.collections || {};
+  const prev = col[collectionId] || { title: "", cover: "", looks: [] };
+  col[collectionId] = { ...prev, ...data, looks: prev.looks || [] };
+  setAll({ ...db, collections: col });
+}
+
+export function addLook(collectionId, look) {
+  // look: { lookId, src, title }
+  const db = getAll();
+  const col = db.collections || {};
+  const images = db.images || {};
+
+  if (!col[collectionId]) {
+    col[collectionId] = { title: "", cover: "", looks: [] };
+  }
+  const exists = (col[collectionId].looks || []).some((l) => l.lookId === look.lookId);
+  if (!exists) {
+    col[collectionId].looks = [...(col[collectionId].looks || []), look];
+  }
+
+  images[look.lookId] = images[look.lookId] || { meta: {}, items: [] };
+  images[look.lookId].meta = {
+    ...(images[look.lookId].meta || {}),
+    collectionId,
+    src: look.src,
+  };
+
+  setAll({ collections: col, images });
+}
+
+export function listLooks(collectionId) {
+  return getCollection(collectionId).looks || [];
+}
+
+/* --- Images / hotspots API --- */
 export function getItems(imageId) {
   const db = getAll();
-  return db.images[imageId]?.items || [];
+  const images = db.images || {};
+  return images[imageId]?.items || [];
 }
 
-/** ustaw items (nadpisz) */
 export function setItems(imageId, items, meta = {}) {
   const db = getAll();
-  if (!db.images[imageId]) db.images[imageId] = { meta: {}, items: [] };
-  db.images[imageId].items = items;
-  db.images[imageId].meta = { ...(db.images[imageId].meta || {}), ...meta };
-  setAll(db);
+  const images = db.images || {};
+  images[imageId] = images[imageId] || { meta: {}, items: [] };
+  images[imageId].items = items || [];
+  images[imageId].meta = { ...(images[imageId].meta || {}), ...meta };
+  setAll({ ...db, images });
 }
 
-/** dodaj item */
 export function addItem(imageId, item) {
   const db = getAll();
-  if (!db.images[imageId]) db.images[imageId] = { meta: {}, items: [] };
-  db.images[imageId].items.push(item);
-  setAll(db);
+  const images = db.images || {};
+  images[imageId] = images[imageId] || { meta: {}, items: [] };
+  images[imageId].items = [...(images[imageId].items || []), item];
+  setAll({ ...db, images });
 }
 
-/** usuń item po id */
 export function removeItem(imageId, id) {
   const db = getAll();
-  if (!db.images[imageId]) return;
-  db.images[imageId].items = db.images[imageId].items.filter((it) => it.id !== id);
-  setAll(db);
+  const images = db.images || {};
+  if (!images[imageId]) return;
+  images[imageId].items = (images[imageId].items || []).filter((it) => it.id !== id);
+  setAll({ ...db, images });
 }
 
-/** podmień item po id */
 export function updateItem(imageId, id, patch) {
   const db = getAll();
-  if (!db.images[imageId]) return;
-  db.images[imageId].items = db.images[imageId].items.map((it) =>
+  const images = db.images || {};
+  if (!images[imageId]) return;
+  images[imageId].items = (images[imageId].items || []).map((it) =>
     it.id === id ? { ...it, ...patch } : it
   );
-  setAll(db);
+  setAll({ ...db, images });
 }
