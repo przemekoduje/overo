@@ -1,0 +1,105 @@
+// src/styles/lookbookCarousel.scss
+
+.lookbook-viewer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 16px;
+  }
+  
+  // Główny, duży obraz
+  .lookbook-viewer__main {
+    flex: 1; // Zajmuje dostępną przestrzeń
+    min-height: 0; // Ważne dla flexboxa, aby się nie rozpychał
+    border-radius: 12px;
+    overflow: hidden;
+  
+    // Komponent LookBook w środku
+    .lookbook {
+      border: none;
+      border-radius: 0;
+      height: 100%;
+    }
+    .lookbook__image {
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+  
+  // Karuzela z miniaturami
+  .lookbook-viewer__carousel {
+    position: relative;
+    flex-shrink: 0; // Nie kurczy się
+    padding: 0 40px; // Miejsce na strzałki
+  }
+  
+  // Kontener na miniatury
+  .carousel-track {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 10px; // Daje przestrzeń dla paska przewijania
+  
+    // Ukryj domyślny pasek przewijania
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  // Pojedyncza miniatura
+  .carousel-thumb {
+    flex: 0 0 90px; // Stała szerokość miniatury
+    height: 120px;
+    border: 2px solid transparent;
+    padding: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+    scroll-snap-align: start;
+  
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+  
+    &:hover {
+      transform: scale(1.03);
+    }
+  
+    // Aktywna miniatura
+    &.is-active {
+      border-color: #0ea5e9; // Kolor akcentu
+    }
+  }
+  
+  // Strzałki nawigacyjne
+  .carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  
+    &.prev {
+      left: 0;
+    }
+    &.next {
+      right: 0;
+    }
+  }

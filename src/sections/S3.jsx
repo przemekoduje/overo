@@ -1,96 +1,193 @@
-import { useEffect,useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import LookBook from "../components/Lookbook/LookBook";
-import "../styles/lookModal.scss";
-import { listCollections, listLooks, upsertCollection, addLook } from "../lib/lookbookStorage";
+import {
+  listCollections,
+  listLooks,
+  upsertCollection,
+  addLook,
+} from "../lib/lookbookStorage";
 
-/* Demo bootstrap (opcjonalnie: tylko na start, jeśli localStorage puste) */
+// Importujemy NOWE style karuzeli, stare 'lookModal.scss' nie będzie już potrzebne
+import "../styles/lookbookCarousel.scss";
+
+/* Demo bootstrap (zostaje bez zmian) */
 function ensureDemoData() {
-    const hasAny = listCollections().length > 0;
-    if (hasAny) return;
-    upsertCollection("spring25", { title: "Spring 2025", cover: "/assets/covers/spring25.jpg" });
-    addLook("spring25", { lookId: "s25_01", src: "/assets/spring25/01.png", title: "Look 1" });
-    addLook("spring25", { lookId: "s25_02", src: "/assets/spring25/02.png", title: "Look 2" });
-  }
-  
-  export default function S3() {
-    const [collections, setCollections] = useState([]);
-    const [activeCollection, setActiveCollection] = useState(null); // collectionId
-    const [looks, setLooks] = useState([]);                         // looks in collection
-    const [openLook, setOpenLook] = useState(null);                 // lookId (== imageId)
-  
-    useEffect(() => {
-      ensureDemoData();
-      setCollections(listCollections());
-    }, []);
-  
-    useEffect(() => {
-      if (!activeCollection) return;
-      setLooks(listLooks(activeCollection));
-    }, [activeCollection]);
-  
-    return (
-      <section className="sec details" aria-label="Lookbook kolekcje">
-        <div className="details__grid">
-          {/* panel z detalami po lewej — zostawiamy jak masz */}
-          <div className="details__media">
-            <img src="/assets/s3_details.png" alt="" />
-          </div>
-  
-          {/* prawa kolumna: najpierw lista kolekcji, potem lista looków */}
-          <div className="details__lookbook">
-            {!activeCollection ? (
-              <>
-                <h2 className="lb__h">Kolekcje</h2>
-                <div className="collectionsGrid">
-                  {collections.map((c) => (
-                    <button key={c.collectionId} className="collectionCard" onClick={() => setActiveCollection(c.collectionId)}>
-                      <img src={c.cover} alt={c.title} />
-                      <strong>{c.title}</strong>
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="lb__head">
-                  <button className="btn" onClick={() => setActiveCollection(null)}>← Wróć</button>
-                  <h2 className="lb__h">{collections.find(x => x.collectionId === activeCollection)?.title}</h2>
-                </div>
-                <div className="looksGrid">
-                  {looks.map((l) => (
-                    <button key={l.lookId} className="lookThumb" onClick={() => setOpenLook(l.lookId)}>
-                      <img src={l.src} alt={l.title} />
-                      <span>{l.title}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-  
-            {/* Modal: powiększony look z hotspotami */}
-            {openLook && (
-              <div className="lookModal" onClick={() => setOpenLook(null)}>
-                <div className="lookModal__dialog" onClick={(e) => e.stopPropagation()}>
-                  <LookBook
-                    imageId={openLook}
-                    image={looks.find(l => l.lookId === openLook)?.src}
-                    alt={looks.find(l => l.lookId === openLook)?.title || ""}
-                  />
-                  <div className="lookModal__tools">
-                    <a
-                      className="btn"
-                      href={`/editor?imageId=${encodeURIComponent(openLook)}&src=${encodeURIComponent(looks.find(l => l.lookId === openLook)?.src || "")}`}
-                      target="_blank" rel="noopener noreferrer"
-                    >
-                      Otwórz w edytorze
-                    </a>
-                    <button className="btn" onClick={() => setOpenLook(null)}>Zamknij</button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+  const collectionId = "spring25";
+  if (listLooks(collectionId).length > 0) return;
+
+  upsertCollection("spring25", {
+    title: "Spring 2025",
+    cover: "/assets/covers/spring25.jpg",
+  });
+  addLook("spring25", {
+    lookId: "s25_01",
+    src: "/assets/spring25/01.png",
+    title: "Look 1",
+  });
+  addLook("spring25", {
+    lookId: "s25_02",
+    src: "/assets/spring25/02.png",
+    title: "Look 2",
+  });
+  addLook("spring25", {
+    lookId: "s25_03",
+    src: "/assets/s1.png",
+    title: "Look 3",
+  });
+}
+
+export default function S3() {
+  const [collections, setCollections] = useState([]);
+  const [activeCollection, setActiveCollection] = useState(null);
+  const [looks, setLooks] = useState([]);
+
+  // Zamiast 'openLook' mamy 'activeLookId' do śledzenia wybranego zdjęcia
+  const [activeLookId, setActiveLookId] = useState(null);
+  const carouselRef = useRef(null); // Referencja do przewijania karuzeli
+
+  useEffect(() => {
+    ensureDemoData();
+    setCollections(listCollections());
+  }, []);
+
+  // Ten useEffect teraz nie tylko wczytuje looki, ale też ustawia pierwszy jako aktywny
+  useEffect(() => {
+    if (!activeCollection) {
+      setLooks([]);
+      setActiveLookId(null);
+      return;
+    }
+    const collectionLooks = listLooks(activeCollection);
+    setLooks(collectionLooks);
+
+    if (collectionLooks.length > 0) {
+      setActiveLookId(collectionLooks[0].lookId);
+    } else {
+      setActiveLookId(null);
+    }
+  }, [activeCollection]);
+
+  const activeLook = looks.find((l) => l.lookId === activeLookId);
+
+  // Funkcja do przewijania karuzeli
+  const scrollCarousel = (direction) => {
+    if (carouselRef.current) {
+      const scrollAmount = carouselRef.current.offsetWidth * 0.8;
+      carouselRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  return (
+    <section className="sec details" aria-label="Lookbook kolekcje">
+      <div className="details__grid">
+        {/* Lewa kolumna bez zmian */}
+        <div className="details__media">
+          <img src="/assets/s3_details.png" alt="Szczegóły kolekcji" />
         </div>
-      </section>
-    );
-  }
+
+        {/* Prawa kolumna - logika wyboru kolekcji zostaje, widok looków się zmienia */}
+        <div className="details__lookbook">
+          {!activeCollection ? (
+            // 1. Widok wyboru kolekcji (bez zmian)
+            <>
+              <h2 className="lb__h">Kolekcje</h2>
+              <div className="collectionsGrid">
+                {collections.map((c) => (
+                  <button
+                    key={c.collectionId}
+                    className="collectionCard"
+                    onClick={() => setActiveCollection(c.collectionId)}
+                  >
+                    <img src={c.cover} alt={c.title} />
+                    <strong>{c.title}</strong>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            // 2. NOWY Widok aktywnej kolekcji z karuzelą (zamiast siatki i modala)
+            <div className="lookbook-viewer">
+              <div className="lb__head">
+                <button
+                  className="btn"
+                  onClick={() => setActiveCollection(null)}
+                >
+                  ← Wróć
+                </button>
+                <h2 className="lb__h">
+                  {
+                    collections.find((x) => x.collectionId === activeCollection)
+                      ?.title
+                  }
+                </h2>
+
+                {/* 👇 DODAJ TEN LINK 👇 */}
+                {activeLook && (
+                  <a
+                    className="editor-link" // Damy mu osobną klasę do stylizacji
+                    href={`/editor?imageId=${encodeURIComponent(
+                      activeLook.lookId
+                    )}&src=${encodeURIComponent(activeLook.src)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Edytuj ten look
+                  </a>
+                )}
+              </div>
+
+              {activeLook ? (
+                <>
+                  {/* Duży, interaktywny obraz */}
+                  <div className="lookbook-viewer__main">
+                    <LookBook
+                      imageId={activeLook.lookId}
+                      image={activeLook.src}
+                      alt={activeLook.title}
+                    />
+                  </div>
+
+                  {/* Karuzela z miniaturami */}
+                  <div className="lookbook-viewer__carousel">
+                    <button
+                      className="carousel-nav prev"
+                      onClick={() => scrollCarousel("left")}
+                    >
+                      &#8249;
+                    </button>
+                    <div className="carousel-track" ref={carouselRef}>
+                      {looks.map((look) => (
+                        <button
+                          key={look.lookId}
+                          className={`carousel-thumb ${
+                            look.lookId === activeLookId ? "is-active" : ""
+                          }`}
+                          onClick={() => setActiveLookId(look.lookId)}
+                        >
+                          <img src={look.src} alt={look.title} />
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      className="carousel-nav next"
+                      onClick={() => scrollCarousel("right")}
+                    >
+                      &#8250;
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p>Brak stylizacji w tej kolekcji.</p>
+              )}
+            </div>
+          )}
+
+          {/* Usunęliśmy całą logikę modala, bo nie jest już potrzebna */}
+        </div>
+      </div>
+    </section>
+  );
+}
