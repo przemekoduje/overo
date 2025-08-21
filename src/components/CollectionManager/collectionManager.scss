@@ -1,0 +1,43 @@
+// src/components/CollectionManager/CollectionManager.scss
+
+.collection-manager {
+    // ... style głównego kontenera bez zmian ...
+  
+    .manager-section {
+      border-top: 1px solid #eee;
+      padding-top: 15px;
+    }
+  
+    // Ulepszona lista kolekcji
+    .collection-list.selectable {
+      li {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1px solid transparent;
+  
+        &:hover {
+          background-color: #e9e9e9;
+        }
+        &.is-active {
+          background-color: #0ea5e9;
+          color: white;
+          font-weight: 600;
+          border-color: #0c87c3;
+        }
+      }
+    }
+  
+    // Lista looków
+    .look-list {
+      font-size: 13px;
+      padding-left: 15px;
+      color: #666;
+    }
+    
+    // Formularze
+    .add-collection-form, .add-look-form {
+      // ... ogólne style formularzy bez zmian ...
+    }
+  }
