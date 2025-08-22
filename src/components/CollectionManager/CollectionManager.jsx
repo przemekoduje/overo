@@ -9,17 +9,14 @@ import {
 } from "../../lib/lookbookStorage";
 import "./collectionManager.scss";
 
-// Dodajemy nowy prop: onLookUpdate, aby odświeżyć karuzelę w S3
 export default function CollectionManager({ onCollectionUpdate, onLookUpdate }) {
   const [collections, setCollections] = useState([]);
   const [selectedCollectionId, setSelectedCollectionId] = useState(null);
   const [looks, setLooks] = useState([]);
 
-  // Stany dla formularzy
   const [newCollectionData, setNewCollectionData] = useState({ id: "", title: "", cover: "" });
   const [newLookData, setNewLookData] = useState({ id: "", title: "", src: "" });
 
-  // --- Funkcje pomocnicze ---
   const fetchCollections = () => {
     setCollections(listCollections());
   };
@@ -28,16 +25,26 @@ export default function CollectionManager({ onCollectionUpdate, onLookUpdate }) 
     fetchCollections();
   }, []);
 
-  // Reaguj na wybór kolekcji i wczytaj jej looki
   useEffect(() => {
     if (selectedCollectionId) {
       setLooks(listLooks(selectedCollectionId));
     } else {
-      setLooks([]); // Wyczyść listę, jeśli żadna kolekcja nie jest wybrana
+      setLooks([]);
     }
   }, [selectedCollectionId]);
 
-  // --- Handlery zdarzeń ---
+  // --- KLUCZOWA POPRAWKA: Uniwersalna funkcja do obsługi zmian w inputach ---
+  const handleCollectionInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewCollectionData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLookInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewLookData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  // --- Funkcje do obsługi formularzy (bez zmian w logice) ---
   const handleAddCollection = (e) => {
     e.preventDefault();
     const { id, title, cover } = newCollectionData;
@@ -57,8 +64,8 @@ export default function CollectionManager({ onCollectionUpdate, onLookUpdate }) 
 
     addLook(selectedCollectionId, { lookId: id, title, src });
     setNewLookData({ id: "", title: "", src: "" });
-    setLooks(listLooks(selectedCollectionId)); // Odśwież listę looków w menedżerze
-    if (onLookUpdate) onLookUpdate(); // Poinformuj S3, żeby odświeżyło karuzelę
+    setLooks(listLooks(selectedCollectionId));
+    if (onLookUpdate) onLookUpdate();
   };
 
   return (
@@ -79,49 +86,64 @@ export default function CollectionManager({ onCollectionUpdate, onLookUpdate }) 
             </li>
           ))}
         </ul>
+        {/* 👇 TUTAJ ZNAJDUJE SIĘ PRZYWRÓCONY FORMULARZ KOLEKCJI 👇 */}
         <form className="add-collection-form" onSubmit={handleAddCollection}>
           <input
             type="text" name="id" placeholder="ID kolekcji (np. fall25)"
-            value={newCollectionData.id} onChange={(e) => setNewCollectionData({...newCollectionData, id: e.target.value})}
+            value={newCollectionData.id} onChange={handleCollectionInputChange}
           />
-          {/* ... pozostałe inputy bez zmian ... */}
+          <input
+            type="text" name="title" placeholder="Tytuł (np. Fall 2025)"
+            value={newCollectionData.title} onChange={handleCollectionInputChange}
+          />
+          <input
+            type="text" name="cover" placeholder="Ścieżka do okładki"
+            value={newCollectionData.cover} onChange={handleCollectionInputChange}
+          />
+          <button type="submit">Dodaj kolekcję</button>
         </form>
       </div>
 
-      {/* === SEKCJA 2: ZARZĄDZANIE LOOKAMI W WYBRANEJ KOLEKCJI === */}
+      {/* === SEKCJA 2: ZARZĄDZANIE LOOKAMI === */}
       {selectedCollectionId && (
         <div className="manager-section">
-          <h5>2. Dodaj look do "{collections.find(c => c.collectionId === selectedCollectionId)?.title}"</h5>
+          <h5>2. Zarządzaj lookami w "{collections.find(c => c.collectionId === selectedCollectionId)?.title}"</h5>
           <ul className="look-list">
-            {looks.map(l => <li key={l.lookId}>{l.title}</li>)}
+            {looks.length > 0 ? (
+              looks.map(l => (
+                <li key={l.lookId}>
+                  <span>{l.title} <small>(ID: {l.lookId})</small></span>
+                  <a
+                    href={`/editor?imageId=${encodeURIComponent(l.lookId)}&src=${encodeURIComponent(l.src)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="edit-look-btn"
+                  >
+                    Edytuj Hotspoty
+                  </a>
+                </li>
+              ))
+            ) : (
+              <p className="empty-list">Brak looków w tej kolekcji.</p>
+            )}
           </ul>
+          {/* 👇 TUTAJ ZNAJDUJE SIĘ PRZYWRÓCONY FORMULARZ LOOKÓW 👇 */}
           <form className="add-look-form" onSubmit={handleAddLook}>
             <input
               type="text" name="id" placeholder="ID looka (np. fall25_01)"
-              value={newLookData.id} onChange={(e) => setNewLookData({...newLookData, id: e.target.value})}
+              value={newLookData.id} onChange={handleLookInputChange}
             />
             <input
-              type="text" name="title" placeholder="Tytuł looka (np. Stylizacja 1)"
-              value={newLookData.title} onChange={(e) => setNewLookData({...newLookData, title: e.target.value})}
+              type="text" name="title" placeholder="Tytuł looka"
+              value={newLookData.title} onChange={handleLookInputChange}
             />
             <input
-              type="text" name="src" placeholder="Ścieżka do zdjęcia (np. /assets/looks/fall25_01.png)"
-              value={newLookData.src} onChange={(e) => setNewLookData({...newLookData, src: e.target.value})}
+              type="text" name="src" placeholder="Ścieżka do zdjęcia"
+              value={newLookData.src} onChange={handleLookInputChange}
             />
             <button type="submit">Dodaj look</button>
           </form>
         </div>
-      )}
-      {/* 👇 DODAJ TEN LINK NA SAMYM DOLE 👇 */}
-      {selectedCollectionId && (
-        <a 
-          className="editor-link-button"
-          href={`/editor?imageId=${looks[0]?.lookId || ''}&src=${looks[0]?.src || ''}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Otwórz Edytor Hotspotów
-        </a>
       )}
     </div>
   );
