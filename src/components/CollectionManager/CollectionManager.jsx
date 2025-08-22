@@ -17,20 +17,28 @@ export default function CollectionManager({ onCollectionUpdate, onLookUpdate }) 
   const [newCollectionData, setNewCollectionData] = useState({ id: "", title: "", cover: "" });
   const [newLookData, setNewLookData] = useState({ id: "", title: "", src: "" });
 
-  const fetchCollections = () => {
-    setCollections(listCollections());
+  // ZMIANA: Ta funkcja jest teraz asynchroniczna
+  const fetchCollections = async () => {
+    const collectionsFromDB = await listCollections(); // Czekamy na dane z Firestore
+    setCollections(collectionsFromDB);
   };
+
 
   useEffect(() => {
     fetchCollections();
   }, []);
 
   useEffect(() => {
-    if (selectedCollectionId) {
-      setLooks(listLooks(selectedCollectionId));
-    } else {
-      setLooks([]);
-    }
+    // ZMIANA: Ten useEffect też musi być asynchroniczny
+    const fetchLooks = async () => {
+      if (selectedCollectionId) {
+        const looksFromDB = await listLooks(selectedCollectionId); // Czekamy na looki
+        setLooks(looksFromDB);
+      } else {
+        setLooks([]);
+      }
+    };
+    fetchLooks();
   }, [selectedCollectionId]);
 
   // --- KLUCZOWA POPRAWKA: Uniwersalna funkcja do obsługi zmian w inputach ---
@@ -43,28 +51,32 @@ export default function CollectionManager({ onCollectionUpdate, onLookUpdate }) 
     const { name, value } = e.target;
     setNewLookData(prev => ({ ...prev, [name]: value }));
   };
-  
-  // --- Funkcje do obsługi formularzy (bez zmian w logice) ---
-  const handleAddCollection = (e) => {
+
+  // ZMIANA: Funkcja obsługi formularza musi być asynchroniczna
+  const handleAddCollection = async (e) => {
     e.preventDefault();
     const { id, title, cover } = newCollectionData;
     if (!id || !title || !cover) return alert("Wypełnij wszystkie pola kolekcji!");
-    
-    upsertCollection(id, { title, cover });
+
+    await upsertCollection(id, { title, cover }); // Czekamy na zakończenie zapisu
     setNewCollectionData({ id: "", title: "", cover: "" });
-    fetchCollections();
+
+    await fetchCollections(); // Odświeżamy listę
     if (onCollectionUpdate) onCollectionUpdate();
   };
 
-  const handleAddLook = (e) => {
+  // ZMIANA: Ta funkcja również staje się asynchroniczna
+  const handleAddLook = async (e) => {
     e.preventDefault();
     const { id, title, src } = newLookData;
     if (!id || !title || !src) return alert("Wypełnij wszystkie pola looka!");
     if (!selectedCollectionId) return alert("Najpierw wybierz kolekcję!");
 
-    addLook(selectedCollectionId, { lookId: id, title, src });
+    await addLook(selectedCollectionId, { lookId: id, title, src }); // Czekamy na zapis
     setNewLookData({ id: "", title: "", src: "" });
-    setLooks(listLooks(selectedCollectionId));
+
+    const updatedLooks = await listLooks(selectedCollectionId); // Odświeżamy listę
+    setLooks(updatedLooks);
     if (onLookUpdate) onLookUpdate();
   };
 
@@ -114,7 +126,8 @@ export default function CollectionManager({ onCollectionUpdate, onLookUpdate }) 
                 <li key={l.lookId}>
                   <span>{l.title} <small>(ID: {l.lookId})</small></span>
                   <a
-                    href={`/editor?imageId=${encodeURIComponent(l.lookId)}&src=${encodeURIComponent(l.src)}`}
+                    // 👇 ZMIANA: Dodajemy 'collectionId' do adresu URL 👇
+                    href={`/editor?collectionId=${encodeURIComponent(selectedCollectionId)}&imageId=${encodeURIComponent(l.lookId)}&src=${encodeURIComponent(l.src)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="edit-look-btn"

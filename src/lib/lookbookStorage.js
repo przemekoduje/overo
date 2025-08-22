@@ -1,117 +1,79 @@
-const KEY = "overo_lookbook_v1";
+// src/lib/lookbookStorage.js
 
-/* --- Core helpers --- */
-function getAll() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return { collections: {}, images: {} };
-    const data = JSON.parse(raw);
+import { db } from "../firebaseConfig";
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  writeBatch,
+} from "firebase/firestore";
 
-    // MIGRACJA: jeśli stary format (np. tylko images), dokończ strukturę
-    return {
-      collections: data.collections || {},
-      images: data.images || {},
-    };
-  } catch {
-    return { collections: {}, images: {} };
-  }
+/* --- API KOLEKCJI --- */
+
+export async function listCollections() {
+  const collectionsCol = collection(db, "collections");
+  const collectionSnapshot = await getDocs(collectionsCol);
+  return collectionSnapshot.docs.map((doc) => ({
+    collectionId: doc.id,
+    ...doc.data(),
+  }));
 }
 
-function setAll(db) {
-  const safe = {
-    collections: db?.collections || {},
-    images: db?.images || {},
-  };
-  localStorage.setItem(KEY, JSON.stringify(safe));
+export async function upsertCollection(collectionId, data) {
+  const collectionRef = doc(db, "collections", collectionId);
+  await setDoc(collectionRef, data, { merge: true });
 }
 
-/* --- Collections API --- */
-export function listCollections() {
-  const db = getAll();
-  const col = db.collections || {};
-  return Object.entries(col).map(([collectionId, c]) => ({ collectionId, ...c }));
+/* --- API LOOKÓW (STYLIZACJI) --- */
+
+export async function listLooks(collectionId) {
+  const looksCol = collection(db, "collections", collectionId, "looks");
+  const looksSnapshot = await getDocs(looksCol);
+  return looksSnapshot.docs.map((doc) => ({
+    lookId: doc.id,
+    ...doc.data(),
+  }));
 }
 
-export function getCollection(collectionId) {
-  const db = getAll();
-  const col = db.collections || {};
-  return col[collectionId] || { title: "", cover: "", looks: [] };
+export async function addLook(collectionId, lookData) {
+  const { lookId, ...data } = lookData;
+  const lookRef = doc(db, "collections", collectionId, "looks", lookId);
+  await setDoc(lookRef, data);
 }
 
-export function upsertCollection(collectionId, data) {
-  const db = getAll();
-  const col = db.collections || {};
-  const prev = col[collectionId] || { title: "", cover: "", looks: [] };
-  col[collectionId] = { ...prev, ...data, looks: prev.looks || [] };
-  setAll({ ...db, collections: col });
+/* --- API HOTSPOTÓW (ITEMS) --- */
+
+export async function getItems(collectionId, lookId) {
+  if (!collectionId || !lookId) return [];
+  const itemsCol = collection(db, "collections", collectionId, "looks", lookId, "items");
+  const itemsSnapshot = await getDocs(itemsCol);
+  return itemsSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
 
-export function addLook(collectionId, look) {
-  // look: { lookId, src, title }
-  const db = getAll();
-  const col = db.collections || {};
-  const images = db.images || {};
-
-  if (!col[collectionId]) {
-    col[collectionId] = { title: "", cover: "", looks: [] };
-  }
-  const exists = (col[collectionId].looks || []).some((l) => l.lookId === look.lookId);
-  if (!exists) {
-    col[collectionId].looks = [...(col[collectionId].looks || []), look];
-  }
-
-  images[look.lookId] = images[look.lookId] || { meta: {}, items: [] };
-  images[look.lookId].meta = {
-    ...(images[look.lookId].meta || {}),
-    collectionId,
-    src: look.src,
-  };
-
-  setAll({ collections: col, images });
+export async function addItem(collectionId, lookId, itemData) {
+  const { id, ...data } = itemData;
+  const itemRef = doc(db, "collections", collectionId, "looks", lookId, "items", id);
+  await setDoc(itemRef, data);
 }
 
-export function listLooks(collectionId) {
-  return getCollection(collectionId).looks || [];
+export async function removeItem(collectionId, lookId, itemId) {
+  const itemRef = doc(db, "collections", collectionId, "looks", lookId, "items", itemId);
+  await deleteDoc(itemRef);
 }
 
-/* --- Images / hotspots API --- */
-export function getItems(imageId) {
-  const db = getAll();
-  const images = db.images || {};
-  return images[imageId]?.items || [];
-}
+export async function setItems(collectionId, lookId, items) {
+  const batch = writeBatch(db);
+  const itemsColRef = collection(db, "collections", collectionId, "looks", lookId, "items");
+  
+  const oldItemsSnapshot = await getDocs(itemsColRef);
+  oldItemsSnapshot.docs.forEach((doc) => batch.delete(doc.ref));
 
-export function setItems(imageId, items, meta = {}) {
-  const db = getAll();
-  const images = db.images || {};
-  images[imageId] = images[imageId] || { meta: {}, items: [] };
-  images[imageId].items = items || [];
-  images[imageId].meta = { ...(images[imageId].meta || {}), ...meta };
-  setAll({ ...db, images });
-}
-
-export function addItem(imageId, item) {
-  const db = getAll();
-  const images = db.images || {};
-  images[imageId] = images[imageId] || { meta: {}, items: [] };
-  images[imageId].items = [...(images[imageId].items || []), item];
-  setAll({ ...db, images });
-}
-
-export function removeItem(imageId, id) {
-  const db = getAll();
-  const images = db.images || {};
-  if (!images[imageId]) return;
-  images[imageId].items = (images[imageId].items || []).filter((it) => it.id !== id);
-  setAll({ ...db, images });
-}
-
-export function updateItem(imageId, id, patch) {
-  const db = getAll();
-  const images = db.images || {};
-  if (!images[imageId]) return;
-  images[imageId].items = (images[imageId].items || []).map((it) =>
-    it.id === id ? { ...it, ...patch } : it
-  );
-  setAll({ ...db, images });
+  items.forEach((item) => {
+    const { id, ...data } = item;
+    const itemRef = doc(db, "collections", collectionId, "looks", lookId, "items", id);
+    batch.set(itemRef, data);
+  });
+  await batch.commit();
 }

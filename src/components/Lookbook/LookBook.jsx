@@ -14,10 +14,16 @@ export default function LookBook({ imageId, image, alt = "" }) {
   const [nat, setNat] = useState({ w: 1000, h: 1500 });
   const [items, setItems] = useState([]);
 
-  // wczytaj poligony dla danego obrazka
+  /// ZMIANA: useEffect do wczytywania poligonów jest teraz asynchroniczny
   useEffect(() => {
-    setItems(getItems(imageId));
-  }, [imageId]);
+    async function loadItems() {
+      if (imageId) {
+        const itemsFromDB = await getItems(imageId); // Czekamy na dane z Firestore
+        setItems(itemsFromDB);
+      }
+    }
+    loadItems();
+  }, [imageId]); // Uruchomi się za każdym razem, gdy zmieni się imageId
 
   // dopasuj viewBox do naturalnych wymiarów obrazu
   useEffect(() => {

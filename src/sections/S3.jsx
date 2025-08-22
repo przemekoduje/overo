@@ -1,3 +1,5 @@
+// src/sections/S3.jsx
+
 import { useEffect, useState, useRef } from "react";
 import LookBook from "../components/Lookbook/LookBook";
 import CollectionManager from "../components/CollectionManager/CollectionManager";
@@ -14,32 +16,36 @@ import { Link } from "react-router-dom";
 
 import "../styles/lookbookCarousel.scss";
 
-/* Demo bootstrap (zostaje bez zmian) */
-function ensureDemoData() {
+// Funkcja ensureDemoData bez zmian
+async function ensureDemoData() {
   const collectionId = "spring25";
-  if (listLooks(collectionId).length > 0) return;
-  upsertCollection("spring25", { title: "Spring 2025", cover: "/assets/covers/spring25.jpg" });
-  addLook("spring25", { lookId: "s25_01", src: "/assets/spring25/01.png", title: "Look 1" });
-  addLook("spring25", { lookId: "s25_02", src: "/assets/spring25/02.png", title: "Look 2" });
-  addLook("spring25", { lookId: "s25_03", src: "/assets/s1.png", title: "Look 3" });
+  const looks = await listLooks(collectionId);
+  if (looks.length > 0) return;
+  await upsertCollection("spring25", { title: "Spring 2025", cover: "/assets/covers/spring25.jpg" });
+  await addLook("spring25", { lookId: "s25_01", src: "/assets/spring25/01.png", title: "Look 1" });
+  await addLook("spring25", { lookId: "s25_02", src: "/assets/spring25/02.png", title: "Look 2" });
+  await addLook("spring25", { lookId: "s25_03", src: "/assets/s1.png", title: "Look 3" });
 }
 
 export default function S3() {
-  // Pobieramy stan zalogowania i funkcję wylogowania z naszego AuthContext
+  // POPRAWKA: Pobieramy 'currentUser', 'isAdmin' i 'logout' z kontekstu
   const { currentUser, isAdmin, logout } = useAuth();
+
+  // Cała reszta logiki stanów i useEffect pozostaje bez zmian
   const [collections, setCollections] = useState([]);
   const [activeCollectionId, setActiveCollectionId] = useState(null);
   const [looks, setLooks] = useState([]);
   const [activeLookId, setActiveLookId] = useState(null);
   const carouselRef = useRef(null);
 
-  const refreshCollections = () => {
-    setCollections(listCollections());
+  const refreshCollections = async () => {
+    const collectionsFromDB = await listCollections();
+    setCollections(collectionsFromDB);
   };
 
-  const refreshLooks = () => {
+  const refreshLooks = async () => {
     if (activeCollectionId) {
-      const updatedLooks = listLooks(activeCollectionId);
+      const updatedLooks = await listLooks(activeCollectionId);
       setLooks(updatedLooks);
       if (!activeLookId && updatedLooks.length > 0) {
         setActiveLookId(updatedLooks[0].lookId);
@@ -48,31 +54,37 @@ export default function S3() {
   };
 
   useEffect(() => {
-    ensureDemoData();
-    const allCollections = listCollections();
-    setCollections(allCollections);
-    if (allCollections.length > 0 && !activeCollectionId) {
-      setActiveCollectionId(allCollections[0].collectionId);
+    async function loadInitialData() {
+      await ensureDemoData();
+      const allCollections = await listCollections();
+      setCollections(allCollections);
+      if (allCollections.length > 0 && !activeCollectionId) {
+        setActiveCollectionId(allCollections[0].collectionId);
+      }
     }
+    loadInitialData();
   }, []);
 
   useEffect(() => {
-    if (!activeCollectionId) {
-      setLooks([]);
-      setActiveLookId(null);
-      return;
+    async function loadLooksForCollection() {
+      if (!activeCollectionId) {
+        setLooks([]);
+        setActiveLookId(null);
+        return;
+      }
+      const collectionLooks = await listLooks(activeCollectionId);
+      setLooks(collectionLooks);
+      if (collectionLooks.length > 0) {
+        setActiveLookId(collectionLooks[0].lookId);
+      } else {
+        setActiveLookId(null);
+      }
     }
-    const collectionLooks = listLooks(activeCollectionId);
-    setLooks(collectionLooks);
-    if (collectionLooks.length > 0) {
-      setActiveLookId(collectionLooks[0].lookId);
-    } else {
-      setActiveLookId(null);
-    }
+    loadLooksForCollection();
   }, [activeCollectionId]);
-
+  
   const activeLook = looks.find((l) => l.lookId === activeLookId);
-
+  
   const scrollCarousel = (direction) => {
     if (carouselRef.current) {
       const scrollAmount = carouselRef.current.offsetWidth * 0.8;
@@ -83,9 +95,9 @@ export default function S3() {
     }
   };
 
+  // 👇 TUTAJ BYŁ BŁĄD - ZASTĘPUJEMY CAŁĄ SEKCJĘ RETURN 👇
   return (
     <section className="sec details" aria-label="Lookbook kolekcje">
-      {/* Pasek Admina z przyciskiem logowania/wylogowania */}
       <div className="admin-bar">
         {currentUser ? (
           <button onClick={logout}>Wyloguj</button>
@@ -93,9 +105,7 @@ export default function S3() {
           <Link to="/login">Admin</Link>
         )}
       </div>
-
       <div className="details__grid">
-        {/* Warunkowe renderowanie menedżera - widoczny tylko dla zalogowanego admina */}
         {isAdmin && (
           <div className="details__media">
             <CollectionManager
@@ -104,22 +114,21 @@ export default function S3() {
             />
           </div>
         )}
-
         <div className="details__lookbook">
           <div className="lookbook-viewer">
             <div className="collection-tags">
               {collections.map((c) => (
                 <button
                   key={c.collectionId}
-                  className={`tag-button ${c.collectionId === activeCollectionId ? "is-active" : ""
-                    }`}
+                  className={`tag-button ${
+                    c.collectionId === activeCollectionId ? "is-active" : ""
+                  }`}
                   onClick={() => setActiveCollectionId(c.collectionId)}
                 >
                   {c.title}
                 </button>
               ))}
             </div>
-
             {activeLook && (
               <div className="lookbook-viewer__carousel">
                 <button className="carousel-nav prev" onClick={() => scrollCarousel("left")}>
@@ -129,8 +138,9 @@ export default function S3() {
                   {looks.map((look) => (
                     <button
                       key={look.lookId}
-                      className={`carousel-thumb ${look.lookId === activeLookId ? "is-active" : ""
-                        }`}
+                      className={`carousel-thumb ${
+                        look.lookId === activeLookId ? "is-active" : ""
+                      }`}
                       onClick={() => setActiveLookId(look.lookId)}
                     >
                       <img src={look.src} alt={look.title} />
@@ -142,7 +152,6 @@ export default function S3() {
                 </button>
               </div>
             )}
-
             {activeLook && (
               <div className="lookbook-viewer__main">
                 <LookBook
@@ -152,7 +161,6 @@ export default function S3() {
                 />
               </div>
             )}
-
             {!activeLook && <p>Wybierz kolekcję lub dodaj do niej stylizacje.</p>}
           </div>
         </div>
