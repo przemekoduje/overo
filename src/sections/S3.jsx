@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import LookBook from "../components/Lookbook/LookBook";
 import CollectionManager from "../components/CollectionManager/CollectionManager";
-
 import {
   listCollections,
   listLooks,
@@ -9,7 +8,10 @@ import {
   addLook,
 } from "../lib/lookbookStorage";
 
-// Importujemy NOWE style karuzeli, stare 'lookModal.scss' nie będzie już potrzebne
+// Kluczowe importy do obsługi logowania
+import { useAuth } from "../context/AuthContext";
+import { Link } from "react-router-dom";
+
 import "../styles/lookbookCarousel.scss";
 
 /* Demo bootstrap (zostaje bez zmian) */
@@ -23,19 +25,18 @@ function ensureDemoData() {
 }
 
 export default function S3() {
+  // Pobieramy stan zalogowania i funkcję wylogowania z naszego AuthContext
+  const { currentUser, isAdmin, logout } = useAuth();
   const [collections, setCollections] = useState([]);
   const [activeCollectionId, setActiveCollectionId] = useState(null);
   const [looks, setLooks] = useState([]);
-  
-  // Usunęliśmy zduplikowaną deklarację
-  const [activeLookId, setActiveLookId] = useState(null); 
+  const [activeLookId, setActiveLookId] = useState(null);
   const carouselRef = useRef(null);
 
   const refreshCollections = () => {
     setCollections(listCollections());
   };
 
-  // Poprawiona funkcja odświeżania looków
   const refreshLooks = () => {
     if (activeCollectionId) {
       const updatedLooks = listLooks(activeCollectionId);
@@ -84,13 +85,25 @@ export default function S3() {
 
   return (
     <section className="sec details" aria-label="Lookbook kolekcje">
+      {/* Pasek Admina z przyciskiem logowania/wylogowania */}
+      <div className="admin-bar">
+        {currentUser ? (
+          <button onClick={logout}>Wyloguj</button>
+        ) : (
+          <Link to="/login">Admin</Link>
+        )}
+      </div>
+
       <div className="details__grid">
-        <div className="details__media">
-          <CollectionManager
-            onCollectionUpdate={refreshCollections}
-            onLookUpdate={refreshLooks}
-          />
-        </div>
+        {/* Warunkowe renderowanie menedżera - widoczny tylko dla zalogowanego admina */}
+        {isAdmin && (
+          <div className="details__media">
+            <CollectionManager
+              onCollectionUpdate={refreshCollections}
+              onLookUpdate={refreshLooks}
+            />
+          </div>
+        )}
 
         <div className="details__lookbook">
           <div className="lookbook-viewer">
@@ -98,9 +111,8 @@ export default function S3() {
               {collections.map((c) => (
                 <button
                   key={c.collectionId}
-                  className={`tag-button ${
-                    c.collectionId === activeCollectionId ? "is-active" : ""
-                  }`}
+                  className={`tag-button ${c.collectionId === activeCollectionId ? "is-active" : ""
+                    }`}
                   onClick={() => setActiveCollectionId(c.collectionId)}
                 >
                   {c.title}
@@ -108,7 +120,6 @@ export default function S3() {
               ))}
             </div>
 
-            {/* 👇 TUTAJ WSTAWILIŚMY BRAKUJĄCY KOD KARUZELI 👇 */}
             {activeLook && (
               <div className="lookbook-viewer__carousel">
                 <button className="carousel-nav prev" onClick={() => scrollCarousel("left")}>
@@ -118,9 +129,8 @@ export default function S3() {
                   {looks.map((look) => (
                     <button
                       key={look.lookId}
-                      className={`carousel-thumb ${
-                        look.lookId === activeLookId ? "is-active" : ""
-                      }`}
+                      className={`carousel-thumb ${look.lookId === activeLookId ? "is-active" : ""
+                        }`}
                       onClick={() => setActiveLookId(look.lookId)}
                     >
                       <img src={look.src} alt={look.title} />
