@@ -7,7 +7,7 @@ import { getItems } from "../../lib/lookbookStorage";
  * imageId: unikalny klucz (np. "look1")
  * image: ścieżka do obrazu
  */
-export default function LookBook({ imageId, image, alt = "" }) {
+export default function LookBook({ collectionId, imageId, image, alt = "" }) {
   const wrapRef = useRef(null);
   const imgRef   = useRef(null);
 
@@ -17,13 +17,14 @@ export default function LookBook({ imageId, image, alt = "" }) {
   /// ZMIANA: useEffect do wczytywania poligonów jest teraz asynchroniczny
   useEffect(() => {
     async function loadItems() {
-      if (imageId) {
-        const itemsFromDB = await getItems(imageId); // Czekamy na dane z Firestore
+      // 2. Użyj 'collectionId' podczas wywoływania getItems
+      if (collectionId && imageId) {
+        const itemsFromDB = await getItems(collectionId, imageId);
         setItems(itemsFromDB);
       }
     }
     loadItems();
-  }, [imageId]); // Uruchomi się za każdym razem, gdy zmieni się imageId
+  }, [collectionId, imageId]);
 
   // dopasuj viewBox do naturalnych wymiarów obrazu
   useEffect(() => {
@@ -122,8 +123,8 @@ export default function LookBook({ imageId, image, alt = "" }) {
               tabIndex={0}
               className={`poly ${activeId === it.id ? "is-active" : ""}`}
               // Otwórz na hover/focus, ale NIE zamykaj na mouseleave — użytkownik może wejść na tooltip
-              onMouseEnter={() => hasHover && open(it)}
-              onFocus={() => open(it)}
+              // onMouseEnter={() => hasHover && open(it)}
+              // onFocus={() => open(it)}
               onClick={() => (activeId === it.id ? close() : open(it))}
               aria-label={`${it.title || ""}${it.brand ? " — " + it.brand : ""}`}
             >

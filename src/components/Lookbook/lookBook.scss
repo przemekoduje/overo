@@ -25,6 +25,7 @@
 /* wielokąty (hotspoty) */
 .poly {
   cursor: pointer;
+  outline: none; 
 }
 .poly__shape {
   fill: rgba(14, 165, 233, 0.08);

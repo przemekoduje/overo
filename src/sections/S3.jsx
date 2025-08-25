@@ -21,10 +21,25 @@ async function ensureDemoData() {
   const collectionId = "spring25";
   const looks = await listLooks(collectionId);
   if (looks.length > 0) return;
-  await upsertCollection("spring25", { title: "Spring 2025", cover: "/assets/covers/spring25.jpg" });
-  await addLook("spring25", { lookId: "s25_01", src: "/assets/spring25/01.png", title: "Look 1" });
-  await addLook("spring25", { lookId: "s25_02", src: "/assets/spring25/02.png", title: "Look 2" });
-  await addLook("spring25", { lookId: "s25_03", src: "/assets/s1.png", title: "Look 3" });
+  await upsertCollection("spring25", {
+    title: "Spring 2025",
+    cover: "/assets/covers/spring25.jpg",
+  });
+  await addLook("spring25", {
+    lookId: "s25_01",
+    src: "/assets/spring25/01.png",
+    title: "Look 1",
+  });
+  await addLook("spring25", {
+    lookId: "s25_02",
+    src: "/assets/spring25/02.png",
+    title: "Look 2",
+  });
+  await addLook("spring25", {
+    lookId: "s25_03",
+    src: "/assets/s1.png",
+    title: "Look 3",
+  });
 }
 
 export default function S3() {
@@ -47,8 +62,23 @@ export default function S3() {
     if (activeCollectionId) {
       const updatedLooks = await listLooks(activeCollectionId);
       setLooks(updatedLooks);
-      if (!activeLookId && updatedLooks.length > 0) {
-        setActiveLookId(updatedLooks[0].lookId);
+
+      // Sprawdzamy, czy aktualnie aktywny look wciąż istnieje na nowej liście
+      const activeLookStillExists = updatedLooks.some(
+        (look) => look.lookId === activeLookId
+      );
+
+      if (updatedLooks.length > 0) {
+        // Jeśli aktywny look został usunięty LUB żaden nie był wybrany,
+        // ustawiamy pierwszy z nowej listy jako aktywny.
+        if (!activeLookStillExists) {
+          setActiveLookId(updatedLooks[0].lookId);
+        }
+        // W przeciwnym razie (jeśli aktywny look wciąż istnieje), nie robimy nic,
+        // pozostawiając go wybranym.
+      } else {
+        // Jeśli kolekcja jest teraz pusta
+        setActiveLookId(null);
       }
     }
   };
@@ -82,9 +112,9 @@ export default function S3() {
     }
     loadLooksForCollection();
   }, [activeCollectionId]);
-  
+
   const activeLook = looks.find((l) => l.lookId === activeLookId);
-  
+
   const scrollCarousel = (direction) => {
     if (carouselRef.current) {
       const scrollAmount = carouselRef.current.offsetWidth * 0.8;
@@ -98,13 +128,7 @@ export default function S3() {
   // 👇 TUTAJ BYŁ BŁĄD - ZASTĘPUJEMY CAŁĄ SEKCJĘ RETURN 👇
   return (
     <section className="sec details" aria-label="Lookbook kolekcje">
-      <div className="admin-bar">
-        {currentUser ? (
-          <button onClick={logout}>Wyloguj</button>
-        ) : (
-          <Link to="/login">Admin</Link>
-        )}
-      </div>
+      
       <div className="details__grid">
         {isAdmin && (
           <div className="details__media">
@@ -131,9 +155,12 @@ export default function S3() {
             </div>
             {activeLook && (
               <div className="lookbook-viewer__carousel">
-                <button className="carousel-nav prev" onClick={() => scrollCarousel("left")}>
+                {/* <button
+                  className="carousel-nav prev"
+                  onClick={() => scrollCarousel("left")}
+                >
                   &#8249;
-                </button>
+                </button> */}
                 <div className="carousel-track" ref={carouselRef}>
                   {looks.map((look) => (
                     <button
@@ -147,21 +174,27 @@ export default function S3() {
                     </button>
                   ))}
                 </div>
-                <button className="carousel-nav next" onClick={() => scrollCarousel("right")}>
+                {/* <button
+                  className="carousel-nav next"
+                  onClick={() => scrollCarousel("right")}
+                >
                   &#8250;
-                </button>
+                </button> */}
               </div>
             )}
             {activeLook && (
               <div className="lookbook-viewer__main">
                 <LookBook
+                  collectionId={activeCollectionId}
                   imageId={activeLook.lookId}
                   image={activeLook.src}
                   alt={activeLook.title}
                 />
               </div>
             )}
-            {!activeLook && <p>Wybierz kolekcję lub dodaj do niej stylizacje.</p>}
+            {!activeLook && (
+              <p>Wybierz kolekcję lub dodaj do niej stylizacje.</p>
+            )}
           </div>
         </div>
       </div>

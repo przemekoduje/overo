@@ -8,13 +8,24 @@ body { margin: 0; font-family: system-ui, Arial, sans-serif; color: #222; backgr
   scroll-snap-type: y mandatory;
   overflow-y: auto;
   height: 100dvh; /* szanuje notch i paski iOS */
+
+  // Dla przeglądarek opartych na WebKit (Chrome, Safari, Edge)
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  // Dla Firefox
+  scrollbar-width: none;
+
+  // Dla Internet Explorer i starszych wersji Edge
+  -ms-overflow-style: none;
 }
 
 /* wspólny styl sekcji */
 .sec {
   position: relative;
   width: 100%;
-  padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+  // padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
 
   /* każda sekcja przykleja się w oknie */
   scroll-snap-align: start;
@@ -70,7 +81,7 @@ body { margin: 0; font-family: system-ui, Arial, sans-serif; color: #222; backgr
 .details__lookbook {
   min-height: 42vh; /* „pole” – możemy zmienić na stałe 40–60vh */
   background: #fff;
-  border-radius: 12px;
+  // border-radius: 12px;
   display: grid; place-items: center;
   border: 1px solid #ddd;
 }
