@@ -3,8 +3,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { useScrollDirection } from "./hooks/useScrollDirection"; // Import naszego nowego hooka
-import { useRef } from "react"; // <-- 1. Zaimportuj useRef
-import Header from "./components/Header/Header"; // Import nowego nagłówka
+import React, { useRef, useState, useEffect } from 'react';  // <-- 1. Zaimportuj useRef
+import Header from "./components/Header/Header";
+import { useElementOnScreen } from "./hooks/useElementOnScreen";
 import "./App.css";
 import "./styles.scss";
 
@@ -29,12 +30,12 @@ function ProtectedRoute({ children }) {
 /**
  * Komponent strony głównej - bez zmian
  */
-function Home({ scrollRef }) {
+function Home({ scrollRef, s3Ref }) {
   return (
     <main className="page" ref={scrollRef}>
       <S1 />
       <S2 />
-      <S3 />
+      <S3 ref={s3Ref} />
       <S4 />
       <S5 />
       <S6 />
@@ -48,16 +49,19 @@ function Home({ scrollRef }) {
  */
 function AppContent() {
   const scrollContainerRef = useRef(null);
+  const s3Ref = useRef(null);
   const scrollDirection = useScrollDirection(scrollContainerRef);
   console.log("Kierunek przewijania:", scrollDirection);
+
+  const isS3OnScreen = useElementOnScreen(s3Ref);
   
-  const isHeaderVisible = scrollDirection !== 'down';
+  const isHeaderVisible = !isS3OnScreen && scrollDirection !== 'down';
 
   return (
     <>
       <Header isVisible={isHeaderVisible} />
       <Routes>
-      <Route path="/" element={<Home scrollRef={scrollContainerRef} />} />
+      <Route path="/" element={<Home scrollRef={scrollContainerRef} s3Ref={s3Ref} />} />
         <Route path="/login" element={<LoginPage />} />
         <Route
           path="/editor"

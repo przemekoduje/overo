@@ -5,7 +5,7 @@ body { margin: 0; font-family: system-ui, Arial, sans-serif; color: #222; backgr
 
 /* strona ze scroll-snap (działa świetnie na mobile) */
 .page {
-  scroll-snap-type: y mandatory;
+  // scroll-snap-type: y mandatory;
   overflow-y: auto;
   height: 100dvh; /* szanuje notch i paski iOS */
 
