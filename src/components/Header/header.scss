@@ -5,7 +5,7 @@
     top: 0;
     left: 0;
     width: 100%;
-    padding: 15px 20px;
+    padding: 25px 20px;
     background-color:transparent;
     backdrop-filter: blur(10px);
     // border-bottom: 1px solid #eee;
@@ -28,7 +28,7 @@
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 28px;
+    font-size: 34px;
     display: flex;
     align-items: center;
     padding: 0;
@@ -37,9 +37,18 @@
   
   .social-icons {
     display: flex;
+    align-items: center;
     gap: 20px;
-    font-size: 22px;
-    a { color: #555; &:hover { color: #000; } }
+    font-size: 34px;
+    a { 
+        color: #555; 
+        display: inline-flex;
+    justify-content: center;
+    align-items: center;
+        &:hover { 
+            color: #000; 
+        } 
+    }
   }
   
   // Przyciski admina - ukryj na mobile, pokaż na desktop

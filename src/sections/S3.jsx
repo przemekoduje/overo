@@ -92,15 +92,15 @@ const S3 = React.forwardRef((props, ref) => {
   // Funkcja scrollCarousel została usunięta, ponieważ logikę przejął hook useHorizontalScroll
 
   return (
-    // 4. "Przyczepiamy" przekazaną referencję 'ref' do głównego elementu
-    <section className="sec details" aria-label="Lookbook kolekcje" ref={ref}>
-      <div className="admin-bar">
+    <section className="sec details" aria-label="Lookbook kolekcje">
+      {/* <div className="admin-bar">
         {currentUser ? (
           <button onClick={logout}>Wyloguj</button>
         ) : (
           <Link to="/login">Admin</Link>
         )}
-      </div>
+      </div> */}
+
       <div className="details__grid">
         {isAdmin && (
           <div className="details__media">
@@ -110,39 +110,27 @@ const S3 = React.forwardRef((props, ref) => {
             />
           </div>
         )}
+
         <div className="details__lookbook">
+          {/* NOWA STRUKTURA WEWNĄTRZ LOOKBOOK-VIEWER */}
           <div className="lookbook-viewer">
+            {/* 1. Tagi kolekcji na samej górze */}
             <div className="collection-tags">
               {collections.map((c) => (
                 <button
                   key={c.collectionId}
-                  className={`tag-button ${c.collectionId === activeCollectionId ? "is-active" : ""
-                    }`}
+                  className={`tag-button ${
+                    c.collectionId === activeCollectionId ? "is-active" : ""
+                  }`}
                   onClick={() => setActiveCollectionId(c.collectionId)}
                 >
                   {c.title}
                 </button>
               ))}
             </div>
-            {activeLook && (
-              <div className="lookbook-viewer__carousel">
-                <div className="carousel-track" ref={carouselRef}>
-                  {looks.map((look) => (
-                    <div
-                      key={look.lookId}
-                      className={`carousel-thumb ${look.lookId === activeLookId ? "is-active" : ""
-                        }`}
-                      onClick={() => setActiveLookId(look.lookId)}
-                      role="button" // Dodajemy dla dostępności
-                      tabIndex={0}  // Umożliwia focusowanie klawiaturą
-                    >
-                      <img src={look.src} alt={look.title} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {activeLook && (
+
+            {/* 2. Duży, interaktywny obraz w centrum */}
+            {activeLook ? (
               <div className="lookbook-viewer__main">
                 <LookBook
                   collectionId={activeCollectionId}
@@ -151,9 +139,30 @@ const S3 = React.forwardRef((props, ref) => {
                   alt={activeLook.title}
                 />
               </div>
+            ) : (
+               <div className="lookbook-viewer__main is-empty">
+                  <p>Wybierz kolekcję.</p>
+               </div>
             )}
-            {!activeLook && activeCollectionId && (
-              <p>Brak stylizacji w tej kolekcji. Dodaj je w menedżerze.</p>
+
+
+            {/* 3. Karuzela miniatur na samym dole */}
+            {activeLook && (
+              <div className="lookbook-viewer__carousel">
+                <div className="carousel-track" ref={carouselRef}>
+                  {looks.map((look) => (
+                    <button
+                      key={look.lookId}
+                      className={`carousel-thumb ${
+                        look.lookId === activeLookId ? "is-active" : ""
+                      }`}
+                      onClick={() => setActiveLookId(look.lookId)}
+                    >
+                      <img src={look.src} alt={look.title} />
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>

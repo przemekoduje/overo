@@ -55,9 +55,11 @@ body { margin: 0; font-family: system-ui, Arial, sans-serif; color: #222; backgr
   object-fit: cover;
 }
 .hero__over {
-  position: relative;
+  position: absolute;
+  right: -50px;
+  bottom: 100px;
   z-index: 1;
-  font-size: clamp(28px, 8vw, 56px);
+  font-size: clamp(128px, 8vw, 56px);
   color: white;
   text-shadow: 0 2px 18px rgba(0,0,0,.45);
 }
