@@ -8,19 +8,30 @@
 
 /* === 1. Tagi Kolekcji (20vh) === */
 .collection-tags {
-  // Wysokość sekcji
   height: 10vh;
-  // Wyrównanie i odstępy
+  
   display: flex;
-  align-items: center; // Wyrównaj tagi w pionie
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 0 15px;
+  align-items: center;
+  gap: 14px;
+  padding: 0 20px;
   flex-shrink: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+
+  // Ukryj pasek przewijania
+  &::-webkit-scrollbar { display: none; }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  cursor: grab;
+
+  &.is-active-drag {
+    cursor: grabbing; // Kursor "trzymania"
+  }
 }
 
+
 .tag-button {
-  padding: 8px 16px;
+  padding: 5px 15px; // Dodajemy też padding po bokach dla lepszego wyglądu
   border: none;
   background-color: #fff;
   font-size: 14px;
@@ -28,6 +39,10 @@
   color: #555;
   cursor: pointer;
   transition: all 0.2s ease;
+
+  // 👇 KLUCZOWE ZMIANY 👇
+  white-space: nowrap; // 1. Zabrania tekstowi wewnątrz przycisku przechodzenia do nowej linii.
+  flex-shrink: 0;      // 2. Zabrania przyciskowi zmniejszania swojej szerokości.
 
   &:hover {
     border-color: #111;
@@ -37,7 +52,7 @@
   &.is-active {
     border-bottom: 1px solid black;
     color: black;
-    
+    font-size: 15px;
   }
 }
 
@@ -45,6 +60,7 @@
 .lookbook-viewer__main {
   // Wysokość sekcji
   height: 70vh;
+  width: 100vw;
   margin: 0 10px;
   // KLUCZOWY KROK 1: Tworzymy kontekst dla absolutnie pozycjonowanej karuzeli
   position: relative;
@@ -88,7 +104,13 @@
   &::-webkit-scrollbar { display: none; }
   -ms-overflow-style: none;
   scrollbar-width: none;
+  cursor: grab;
+
+  &.is-active-drag {
+    cursor: grabbing; // Kursor "trzymania"
+  }
 }
+
 
 .carousel-thumb {
   flex: 0 0 90px;
@@ -114,6 +136,12 @@
     transform: scale(1.2);
   }
 }
+
+.collection-tags.is-grabbing,
+.carousel-track.is-grabbing {
+  cursor: grabbing;
+}
+
 
 /* Margines 10vh na dole jest tworzony automatycznie przez flexbox,
    ponieważ .lookbook-viewer ma height: 100%, a jego dzieci (tagi i obraz)
